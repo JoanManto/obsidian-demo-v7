@@ -8,11 +8,38 @@ const cacheContext = React.createContext();
 
 function ObsidianWrapper(props) {
   const { algo, capacity } = props
-  const [cache, setCache] = React.useState(new LFUCache(Number(capacity || 2000)));
-  if(algo === 'LRU') setCache(new LRUCache(Number(capacity || 2000)));  // You have to put your Google Chrome Obsidian developer tool extension id to connect Obsidian Wrapper with dev tool
-  const chromeExtensionId = 'apcpdmmbhhephobnmnllbklplpaoiemo';
+  //needs to be fixed in obsidian main to fix the react break - initial state to be null and then use conditionals to set state
+  const setAlgoCap = (algo, capacity) => {
+    let cache;
+    if(algo === 'LRU'){
+      cache = new LRUCache(Number(capacity || 2000))
+    } else {
+      cache = new LFUCache(Number(capacity || 2000))
+    }
+    return cache;
+  }
+  const [cache, setCache] = React.useState(setAlgoCap(algo, capacity));
+  // if(algo === 'LFU') setCache(new LFUCache(Number(capacity || 2000)));
+  // if(algo === 'LRU') setCache(new LRUCache(Number(capacity || 2000)));  // You have to put your Google Chrome Obsidian developer tool extension id to connect Obsidian Wrapper with dev tool
+  const chromeExtensionId = 'nddpelajmlhhoopknjdjcjojakkndbol';
+  // TRY TO GET THIS WORKING LATER
+  // const chromeExtensionId = Deno.env.get("CHROME_EXTENSION_ID");
+  // console.log('chromeExtensionId is ', chromeExtensionId);
   // initialice cache in local storage
   //window.localStorage.setItem('cache', JSON.stringify(cache));
+
+  // setTimeout(() => {
+  //   console.log('made it inside set timeout, about to execute sendMessage');
+  //   console.log(chrome.runtime.sendMessage(chromeExtensionId, {hi: 'Hello World!'}));
+  //   chrome.runtime.sendMessage(chromeExtensionId, {hi: 'Hello World!'});
+  // }, 3000);
+  
+
+  // chrome.runtime.onConnect.addListener((port) => {
+  //   console.log('connected!', port);
+  // })
+
+
 
   async function query(query, options = {}) {
     // dev tool messages
@@ -33,6 +60,7 @@ function ObsidianWrapper(props) {
       wholeQuery = true,
     } = options;
 
+    //pollInterval is specific to graphQL; read more here: https://www.apollographql.com/docs/react/data/queries/#updating-cached-query-results
     // when pollInterval is not null the query will be sent to the server every inputted number of milliseconds
     if (pollInterval) {
       const interval = setInterval(() => {
@@ -67,6 +95,14 @@ function ObsidianWrapper(props) {
           "From cacheRead: Here's the response time on the front end: ",
           cacheHitResponseTime
         );
+
+    // ADD TO MAIN OBSIDIAN REPO *********************************************************
+        window.postMessage({
+          type: 'query',
+          time: cacheHitResponseTime,
+          name: startTime,
+          hit: true
+        });
         /*chrome.runtime.sendMessage(chromeExtensionId, {
           cacheHitResponseTime: cacheHitResponseTime,
         });*/
@@ -110,6 +146,15 @@ function ObsidianWrapper(props) {
           "After the hunt: Here's the response time on the front end: ",
           cacheMissResponseTime
         );
+
+    // ADD TO MAIN OBSIDIAN REPO *********************************************************
+        window.postMessage({
+          type: 'query', 
+          time: cacheMissResponseTime,
+          name: startTime,
+          hit: false
+        });
+
         return resObj;
       } catch (e) {
         console.log(e);

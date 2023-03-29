@@ -3,7 +3,7 @@ import Home from "./components/Home.tsx";
 
 const App = (props: any) => {
   return (
-    <ObsidianWrapper>
+    <ObsidianWrapper algo='W-TinyLFU'>
       <Home />
     </ObsidianWrapper>
   );
